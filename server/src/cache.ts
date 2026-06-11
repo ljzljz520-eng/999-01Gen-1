@@ -10,8 +10,7 @@ interface CacheEntry<T> {
 const CACHE_TTL = 5 * 60 * 1000
 const PURGE_INTERVAL = 60 * 1000
 
-const appDir = path.resolve()
-const cacheFilePath = path.join(appDir, 'data', 'cache.json')
+const cacheFilePath = path.join(__dirname, '../data/cache.json')
 
 function loadCacheFromFile(): Map<string, CacheEntry<any>> {
   try {

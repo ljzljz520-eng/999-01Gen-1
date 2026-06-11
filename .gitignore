@@ -22,6 +22,10 @@ coverage/
 .vite/
 *.tsbuildinfo
 
+# Local runtime data
+server/data/*.db
+server/data/*.db-*
+
 # Editor and OS files
 .DS_Store
 .idea/

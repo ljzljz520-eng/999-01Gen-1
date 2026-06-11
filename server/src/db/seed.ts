@@ -7,6 +7,16 @@ function toTimestamp(dateStr: string): number {
 async function seed() {
   await initDb()
 
+  await dbAsync.run('DELETE FROM issue_records')
+  await dbAsync.run('DELETE FROM suspensions')
+  await dbAsync.run('DELETE FROM recalls')
+  await dbAsync.run('DELETE FROM batch_car_models')
+  await dbAsync.run('DELETE FROM batch_barcodes')
+  await dbAsync.run('DELETE FROM batches')
+  await dbAsync.run('DELETE FROM car_models')
+  await dbAsync.run('DELETE FROM parts')
+  await dbAsync.run('DELETE FROM suppliers')
+
   const suppliers = [
     { name: '上海汽车零部件有限公司', contact: '张经理', phone: '13800138001' },
     { name: '广州汽配制造集团', contact: '李总', phone: '13900139002' },
@@ -23,11 +33,11 @@ async function seed() {
   }
 
   const parts = [
-    { barcode: 'AP2024001001', name: '前刹车片', specification: 'D1234 前制动片', unit: '套' },
-    { barcode: 'AP2024002001', name: '空气滤清器', specification: 'A5678 高效过滤', unit: '个' },
-    { barcode: 'AP2024003001', name: '机油滤清器', specification: 'O9012 旋装式', unit: '个' },
-    { barcode: 'AP2024004001', name: '火花塞', specification: 'PK16TT 双铂金', unit: '支' },
-    { barcode: 'AP2024005001', name: '正时皮带', specification: 'TB234 正时传动带', unit: '条' },
+    { barcode: '6901234567890', name: '前刹车片', specification: 'D1234 前制动片', unit: '套' },
+    { barcode: '6901234567893', name: '空气滤清器', specification: 'A5678 高效过滤', unit: '个' },
+    { barcode: '6901234567895', name: '机油滤清器', specification: 'O9012 旋装式', unit: '个' },
+    { barcode: '6901234567897', name: '火花塞', specification: 'PK16TT 双铂金', unit: '支' },
+    { barcode: '6901234567899', name: '正时皮带', specification: 'TB234 正时传动带', unit: '条' },
   ]
 
   const partIds: number[] = []
@@ -111,27 +121,6 @@ async function seed() {
     batchIds.push(Number(result.lastID))
   }
 
-  const batchBarcodes = [
-    { barcode: '6901234567890', batch_id: batchIds[0] },
-    { barcode: '6901234567891', batch_id: batchIds[0] },
-    { barcode: '6901234567892', batch_id: batchIds[0] },
-    { barcode: '6901234567893', batch_id: batchIds[1] },
-    { barcode: '6901234567894', batch_id: batchIds[1] },
-    { barcode: '6901234567895', batch_id: batchIds[2] },
-    { barcode: '6901234567896', batch_id: batchIds[2] },
-    { barcode: '6901234567897', batch_id: batchIds[3] },
-    { barcode: '6901234567898', batch_id: batchIds[3] },
-    { barcode: '6901234567899', batch_id: batchIds[4] },
-    { barcode: '6901234567900', batch_id: batchIds[4] },
-  ]
-
-  for (const bb of batchBarcodes) {
-    await dbAsync.run(
-      'INSERT INTO batch_barcodes (barcode, batch_id) VALUES (?, ?)',
-      [bb.barcode, bb.batch_id]
-    )
-  }
-
   const batchCarModels = [
     { batch_id: batchIds[0], car_model_ids: [carModelIds[0], carModelIds[1], carModelIds[6]] },
     { batch_id: batchIds[1], car_model_ids: [carModelIds[2], carModelIds[3]] },
@@ -198,12 +187,12 @@ async function seed() {
   }
 
   console.log('数据库种子数据插入成功！')
-  console.log('\n测试条码列表：')
-  console.log('6901234567890 - 前刹车片（批次B20240601001，正常）')
-  console.log('6901234567893 - 空气滤清器（批次B20240515002，正常）')
-  console.log('6901234567895 - 机油滤清器（批次B20240420003，有召回）')
-  console.log('6901234567897 - 火花塞（批次B20240310004，正常）')
-  console.log('6901234567899 - 正时皮带（批次B20240205005，已挂起，高风险）')
+  console.log('\n测试条码（parts.barcode，扫码直用）：')
+  console.log('  6901234567890 - 前刹车片（正常）')
+  console.log('  6901234567893 - 空气滤清器（正常）')
+  console.log('  6901234567895 - 机油滤清器（有召回）')
+  console.log('  6901234567897 - 火花塞（正常）')
+  console.log('  6901234567899 - 正时皮带（已挂起，高风险）')
 }
 
 seed().catch(console.error)

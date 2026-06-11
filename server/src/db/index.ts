@@ -2,9 +2,7 @@ import sqlite3 from 'sqlite3'
 import path from 'path'
 import fs from 'fs'
 
-const appDir = path.resolve()
-
-const dbDir = path.join(appDir, '../../data')
+const dbDir = path.join(__dirname, '../../data')
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true })
 }

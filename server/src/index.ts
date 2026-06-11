@@ -6,8 +6,6 @@ import { initDb } from './db'
 import partsRouter from './routes/parts'
 import adminRouter from './routes/admin'
 
-const appDir = path.resolve()
-
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001
 
 const app = express()
@@ -19,14 +17,6 @@ app.use(express.urlencoded({ extended: true }))
 app.use('/api/parts', partsRouter)
 app.use('/api/admin', adminRouter)
 
-const clientDistDir = path.join(appDir, '../client/dist')
-if (fs.existsSync(clientDistDir)) {
-  app.use(express.static(clientDistDir))
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(clientDistDir, 'index.html'))
-  })
-}
-
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
@@ -34,6 +24,14 @@ app.get('/api/health', (_req, res) => {
     uptime: process.uptime(),
   })
 })
+
+const clientDistDir = path.join(__dirname, '../../client/dist')
+if (fs.existsSync(clientDistDir)) {
+  app.use(express.static(clientDistDir))
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientDistDir, 'index.html'))
+  })
+}
 
 async function startServer() {
   try {

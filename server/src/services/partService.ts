@@ -29,7 +29,7 @@ export async function getPartDetailByBarcode(barcode: string): Promise<{
   const row = await dbAsync.get<any>(
     `
     SELECT
-      bb.barcode,
+      p.barcode,
       p.name as part_name,
       p.specification,
       p.unit,
@@ -48,16 +48,18 @@ export async function getPartDetailByBarcode(barcode: string): Promise<{
       sp.issue_count,
       sp.suspended_at,
       sp.suspended_by,
-      sp.is_active as suspension_active
-    FROM batch_barcodes bb
-    JOIN batches b ON bb.batch_id = b.id
+      sp.is_active as suspension_active,
+      b.id as batch_id
+    FROM batches b
     JOIN parts p ON b.part_id = p.id
     JOIN suppliers s ON b.supplier_id = s.id
+    LEFT JOIN batch_barcodes bb ON bb.batch_id = b.id AND bb.barcode = ?
     LEFT JOIN recalls r ON b.id = r.batch_id AND r.is_active = 1
     LEFT JOIN suspensions sp ON b.id = sp.batch_id AND sp.is_active = 1
-    WHERE bb.barcode = ?
+    WHERE p.barcode = ? OR bb.barcode = ?
+    LIMIT 1
     `,
-    [barcode]
+    [barcode, barcode, barcode]
   )
 
   if (!row) {
@@ -69,9 +71,9 @@ export async function getPartDetailByBarcode(barcode: string): Promise<{
     SELECT cm.brand, cm.model, cm.year_range
     FROM batch_car_models bcm
     JOIN car_models cm ON bcm.car_model_id = cm.id
-    WHERE bcm.batch_id = (SELECT batch_id FROM batch_barcodes WHERE barcode = ?)
+    WHERE bcm.batch_id = ?
     `,
-    [barcode]
+    [row.batch_id]
   )
 
   const recentIssuesCutoff = Math.floor(Date.now() / 1000) - RECENT_ISSUE_DAYS * 24 * 60 * 60
@@ -79,12 +81,12 @@ export async function getPartDetailByBarcode(barcode: string): Promise<{
     `
     SELECT type, description, reported_at, reported_by
     FROM issue_records
-    WHERE batch_id = (SELECT batch_id FROM batch_barcodes WHERE barcode = ?)
+    WHERE batch_id = ?
       AND reported_at >= ?
     ORDER BY reported_at DESC
     LIMIT 5
     `,
-    [barcode, recentIssuesCutoff]
+    [row.batch_id, recentIssuesCutoff]
   )
 
   const hasActiveRecall = row.recall_active === 1
@@ -152,8 +154,11 @@ export async function getPartDetailByBarcode(barcode: string): Promise<{
 
   cacheService.set(cacheKey, partDetail, CACHE_TTL, true)
 
-  const cacheResult = cacheService.get<PartDetail>(cacheKey)!
-  return cacheResult
+  return {
+    data: partDetail,
+    fromCache: false,
+    cacheExpiresAt: Date.now() + CACHE_TTL,
+  }
 }
 
 export async function reportIssue(
@@ -209,11 +214,13 @@ export async function getBatchByBarcode(
   const result = await dbAsync.get<{ id: number; batch_no: string }>(
     `
     SELECT b.id, b.batch_no
-    FROM batch_barcodes bb
-    JOIN batches b ON bb.batch_id = b.id
-    WHERE bb.barcode = ?
+    FROM batches b
+    JOIN parts p ON b.part_id = p.id
+    LEFT JOIN batch_barcodes bb ON bb.batch_id = b.id AND bb.barcode = ?
+    WHERE p.barcode = ? OR bb.barcode = ?
+    LIMIT 1
     `,
-    [barcode]
+    [barcode, barcode, barcode]
   )
   return result || null
 }
